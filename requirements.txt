@@ -1,0 +1,6 @@
+Flask
+PyMuPDF
+python-docx
+openpyxl
+pandas
+xlrd

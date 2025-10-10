@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Viewer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    
+    <style>
+        body {
+            font-family: monospace;
+            background-color: #24292e;
+            color: #d1d5da;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden; 
+        }
+        
+        /* Controls (Fixed position) */
+        .controls {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+        }
+        .controls button {
+            background-color: #0366d6;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 6px;
+        }
+        
+        /* 🚀 মূল কন্টেইনার: শুধুমাত্র একটি কলামে সেট করা হলো */
+        #code-container {
+            background-color: #0d1117;
+            border-radius: 6px;
+            overflow-x: auto; 
+            margin-top: 10px;
+            
+            display: grid;
+            grid-template-columns: 1fr; /* 🛑 লাইন নম্বর অপসারণের পর পরিবর্তন */
+        }
+
+        /* 🛑 সম্পূর্ণভাবে .line-numbers CSS ব্লকটি সরানো হলো */
+
+        /* কোড ব্লক কলামের কন্টেইনার */
+        pre {
+            grid-column: 1; /* এখন কলাম ১ ব্যবহার করবে */
+            margin: 0;
+            padding: 20px;
+            overflow-x: auto;
+            white-space: pre-wrap; 
+            word-wrap: break-word; 
+        }
+        
+        /* highlight.js output adjustments */
+        pre code.hljs {
+            display: block;
+            padding: 0 !important; 
+        }
+
+        /* Highlighted search result */
+        .highlight {
+            background-color: rgba(255, 255, 0, 0.5);
+            color: black;
+            font-weight: bold;
+        }
+        /* প্রথম হাইলাইট টার্গেট করার জন্য */
+        .first-highlight {
+            box-shadow: 0 0 10px 2px rgba(255, 165, 0, 0.8);
+            border: 1px solid orange; 
+        }
+        
+        /* 🚀 নতুন স্টাইল: Word/Plain Text Title */
+        h4#file-title {
+            color: #6a737d;
+            margin-bottom: 5px;
+            padding: 0 20px;
+        }
+    </style>
+</head>
+<body>
+    
+    {% if filename %}
+    <h4 id="file-title">Text View for: {{ filename }}</h4>
+    {% endif %}
+    
+    <div class="controls">
+        <button id="saveFileBtn">Save File</button>
+    </div>
+    
+    <div id="code-container">
+        {% if preloaded_content %}
+            <pre><code id="file-content" class="hljs language-plaintext">{{ preloaded_content }}</code></pre>
+        {% else %}
+            <div id="loading-message">Loading file content...</div>
+        {% endif %}
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        
+        const fileId = '{{ file_id }}';
+        const query = {{ query | tojson }}; 
+        
+        const codeContainer = document.getElementById('code-container');
+        const fileContentEl = document.getElementById('file-content'); // codeTag হিসেবে ব্যবহৃত হয়
+        const saveFileBtn = document.getElementById('saveFileBtn');
+        
+        let initialContentLoaded = fileContentEl && fileContentEl.textContent.trim().length > 0;
+        let decodedFilename = 'downloaded_file';
+
+        // 🚀 কন্টেন্ট লোডিং লজিক: যদি preloaded_content না থাকে, তবে API কল করে লোড করুন
+        if (!initialContentLoaded) {
+            codeContainer.innerHTML = '<div style="padding: 20px;">Loading file content...</div>';
+
+            const response = await fetch(`/get_file/${fileId}`);
+            
+            if (response.ok) {
+                const text = await response.text();
+                
+                // ফাইলনেম ডিকোড করার লজিক
+                const contentDisposition = response.headers.get('Content-Disposition');
+                const filenameMatch = contentDisposition.match(/filename\*=UTF-8''([^;"]+)"?/);
+
+                if (filenameMatch && filenameMatch[1]) {
+                    decodedFilename = decodeURIComponent(filenameMatch[1]);
+                } else {
+                    const plainFilenameMatch = contentDisposition.match(/filename="([^;"]+)"/);
+                    decodedFilename = plainFilenameMatch ? plainFilenameMatch[1] : 'downloaded_file';
+                }
+                
+                const standardizedText = text.replace(/\r\n|\r/g, '\n'); 
+                
+                codeContainer.innerHTML = ''; 
+
+                const preElement = document.createElement('pre');
+                preElement.id = 'code-block';
+                const codeTag = document.createElement('code');
+                codeTag.id = 'file-content';
+                codeTag.className = 'hljs language-plaintext'; 
+                codeTag.textContent = standardizedText; 
+                preElement.appendChild(codeTag);
+
+                codeContainer.appendChild(preElement);
+                
+                // যদি এটি Word/PDF না হয়, তাহলে সিনট্যাক্স হাইলাইটিং করার চেষ্টা করুন (অন্যান্য ভিউয়ারের জন্য)
+                // যদি আপনি শুধুমাত্র সাধারণ টেক্সট এবং Word ফাইল দেখানোর জন্য এই টেমপ্লেটটি ব্যবহার করেন, তাহলে এটি লাগবে না
+                // যদি /view_code/ রুটটিও এই টেমপ্লেটটি ব্যবহার করে তবে এই অংশটি প্রয়োজন
+                if (!window.location.pathname.includes('/view_text/')) {
+                     hljs.highlightElement(codeTag); 
+                }
+                
+                initialContentLoaded = true;
+            }
+        }
+        
+        if (initialContentLoaded) {
+             const contentElement = document.getElementById('file-content');
+             
+             // 🚀 ধাপ ১: যদি /view_text/ রুটে থাকে, তবে সিনট্যাক্স হাইলাইটিং এড়িয়ে যান (শুধুমাত্র প্লেইন টেক্সট মোড)
+             if (!window.location.pathname.includes('/view_text/')) {
+                 hljs.highlightElement(contentElement);
+             }
+
+
+            let firstHighlightElement = null;
+
+            // 🚀 ধাপ ২: হাইলাইট এবং স্ক্রল লজিক (TreeWalker ব্যবহার করে)
+            if (query) {
+                const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                let foundFirst = false;
+
+                const walker = document.createTreeWalker(
+                    contentElement, 
+                    NodeFilter.SHOW_TEXT, 
+                    null, 
+                    false
+                );
+
+                let node;
+                while (node = walker.nextNode()) {
+                    if (node.parentElement && node.parentElement.classList.contains('highlight')) {
+                        continue; 
+                    }
+                    
+                    const parentNode = node.parentNode;
+                    let match;
+                    
+                    while (match = regex.exec(node.nodeValue)) {
+                        const matchText = match[0];
+                        
+                        const highlightSpan = document.createElement('span');
+                        highlightSpan.className = 'highlight';
+
+                        if (!foundFirst) {
+                            highlightSpan.classList.add('first-highlight');
+                            highlightSpan.id = 'search-target';
+                            foundFirst = true;
+                        }
+                        
+                        const preMatchText = node.nodeValue.substring(0, match.index);
+                        if (preMatchText) {
+                            parentNode.insertBefore(document.createTextNode(preMatchText), node);
+                        }
+                        
+                        highlightSpan.textContent = matchText;
+                        parentNode.insertBefore(highlightSpan, node);
+                        
+                        node.nodeValue = node.nodeValue.substring(match.index + matchText.length);
+                        
+                        regex.lastIndex = 0; 
+                        
+                        if (!firstHighlightElement) {
+                            firstHighlightElement = highlightSpan;
+                        }
+                    }
+                }
+            }
+
+
+            // 🛑 ধাপ ৩: স্ক্রল লজিক
+            if (firstHighlightElement) {
+                // DOM পুরোপুরি সেট হওয়ার জন্য একটি ছোট ডিলে
+                setTimeout(() => {
+                    firstHighlightElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start' 
+                    });
+                    
+                    firstHighlightElement.removeAttribute('id');
+                }, 50); 
+            }
+            
+            // Save button logic (unchanged)
+            saveFileBtn.addEventListener('click', () => {
+                const link = document.createElement('a');
+                link.href = window.location.origin + `/get_file/${fileId}`;
+                // যদি filename প্রিলোডেড না থাকে (যেমন, /view_code/ এ), তবে ডাউনলোড করা নাম ব্যবহার করুন
+                link.download = '{{ filename if filename else "" }}' || decodedFilename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+            
+            // Copy logic (unchanged from your last version)
+            document.addEventListener('copy', (event) => {
+                 const selection = window.getSelection();
+                 let selectedText = selection.toString();
+                 event.clipboardData.setData('text/plain', selectedText);
+                 event.preventDefault();
+            });
+        }
+    });
+    </script>
+</body>
+</html>

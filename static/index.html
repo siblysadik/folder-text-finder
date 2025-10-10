@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Folder Text Finder</title>
+	<link rel="icon" type="image/x-icon" href="../icons/icon.png">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>📂 Folder Text Finder</h1>
+        <p class="hint">The ultimate tool for deep text and code content search across multiple local folders.</p>
+
+        <div class="description-box">
+            <p>
+                <strong>Comprehensive Content Indexing:</strong> Search **inside** multiple file types including **PDF, Word (.docx/.doc), Excel (.xlsx/.xls/.csv)**, and all major **Code** and **Text** formats.
+            </p>
+            <p>
+                <strong>Seamless Local Connection:</strong>
+                Instantly **Open the File** in its native application or **Open the Containing Folder** directly from the search results. Supports files synchronized locally via Google Drive/OneDrive.
+            </p>
+        </div>
+        
+    </header>
+
+    <main>
+        <section class="card controls">
+            <div class="row folder-select-row">
+                <button id="pickDirBtn" title="Select Folder on Desktop">Select Folder (Desktop)</button>
+                <button id="useFallbackBtn" title="Select Files for Mobile/Fallback">Use Fallback (Mobile)</button>
+
+                <button id="addFolderBtn" title="Add More Folder" style="display:none;">➕</button>
+                <input type="file" id="fallbackInput" webkitdirectory directory multiple style="display:none">
+            </div>
+
+            <div id="folderListContainer">
+            </div>
+
+            <div class="input-group" id="basePathInputGroup" style="margin-top: 15px;">
+                <label for="basePath">Enter Root Folder's ABSOLUTE Path:</label>
+                <input type="text" id="basePath" placeholder="C:\Users\User\Documents\MyProject" style="width: 100%;">
+            </div>
+            <hr>
+            <div class="row search-row">
+                <input id="query" placeholder='Enter text to search in all folders' />
+                <button id="searchBtn">🔎 Search</button>
+            </div>
+        </section>
+
+        <section class="card results">
+            <div id="status" class="hint">Ready.</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:40%">File Path</th>
+                        <th style="width:8%">Page/Line</th>
+                        <th>Preview (highlighted)</th>
+                        <th style="width:20%">Open</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+            </table>
+        </section>
+    </main>
+
+    <footer id="mainFooter">
+        <hr>
+        <div class="footer-content">
+            <p class="credit-line">
+                © 2025 Folder Text Finder | Developed by **Sibly Sadik**
+            </p>
+            <p class="support-info">
+                Supported Formats: PDF, DOCX, XLSX, CSV, Code (.py, .js, .html, etc.), and Text files.
+                <br>Note: Cloud files (Google Drive/OneDrive) are supported only if they are synchronized locally.
+            </p>
+        </div>
+    </footer>
+
+    <a href="https://www.buymeacoffee.com/siblysadik" target="_blank" id="bmacFloatingBtn" title="Support Development">
+        ☕ Buy Me a Coffee
+    </a>
+
+    <script src="app.js"></script>
+</body>
+</html>

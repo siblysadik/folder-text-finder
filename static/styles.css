@@ -1,0 +1,358 @@
+/* static/styles.css (FINAL CODE with Responsive Media Queries) */
+
+/* === Variables === */
+:root {
+    --bg: #0b1020;
+    --card: #121937;
+    --muted: #98a2b3;
+    --text: #e6e9f2;
+    --accent: #6ee7b7;
+    --bmac-color: #FF813F; /* Buy Me a Coffee-এর কমলা রঙ */
+}
+
+/* === Base Styles === */
+body {
+    font-family: Inter, system-ui, Arial, sans-serif;
+    background: linear-gradient(180deg, #071024, #0d1730);
+    color: var(--text);
+    margin: 0;
+    padding: 20px;
+}
+
+/* === Typography & Headings === */
+header {
+    margin-bottom: 12px;
+}
+
+h1 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.hint {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 5px;
+}
+
+/* 🌟 নতুন যুক্ত: টুলের বর্ণনা বক্সের স্টাইল */
+.description-box {
+    background: #1f6f5e20;
+    border: 1px solid var(--accent);
+    padding: 10px 15px;
+    border-radius: 8px;
+    margin: 15px 0;
+}
+
+.description-box p {
+    margin: 5px 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #cfeee0;
+}
+
+/* === Card & Layout === */
+.card {
+    background: #0f1633;
+    border: 1px solid #1f2b4a;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+}
+
+.controls .row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 8px;
+}
+
+/* === Form Elements === */
+input,
+select {
+    background: #0b1530;
+    border: 1px solid #213055;
+    color: var(--text);
+    padding: 8px;
+    border-radius: 8px;
+}
+
+button {
+    background: #1f6f5e;
+    border: 1px solid #17493a;
+    color: white;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+button:hover {
+    transform: translateY(-2px);
+}
+
+/* === Table Styles === */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+}
+
+th,
+td {
+    padding: 8px;
+    border-bottom: 1px solid #223055;
+    vertical-align: top;
+    font-size: 14px;
+}
+
+th {
+    background: #0c1328;
+    color: #cfeee0;
+    position: sticky;
+    top: 0;
+}
+
+mark {
+    background: #ffd86b;
+    color: #111;
+    padding: 1px 3px;
+    border-radius: 4px;
+}
+
+/* === Utility & Footer === */
+.path {
+    font-family: ui-monospace, Consolas, Menlo;
+}
+
+/* 🌟 নতুন ফুটারে স্টাইল */
+#mainFooter {
+    margin-top: 50px;
+    padding: 20px 0;
+    text-align: center;
+    border-top: 1px solid #223055;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.footer-content {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.credit-line {
+    font-size: 14px;
+    color: var(--text);
+    margin-bottom: 5px;
+}
+
+.support-info {
+    margin-top: 5px;
+    line-height: 1.5;
+}
+
+
+/* 🌟 ভাসমান (Floating) Buy Me a Coffee বাটন স্টাইল */
+#bmacFloatingBtn {
+    /* স্ক্রিনের একটি নির্দিষ্ট স্থানে স্থির করা হলো */
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    
+    /* বাটন স্টাইল */
+    background-color: var(--bmac-color); 
+    color: white;
+    padding: 10px 15px;
+    border-radius: 50px; /* গোল বা Pill আকৃতির জন্য */
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 14px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    z-index: 1000; /* নিশ্চিত করা হলো যেন অন্য এলিমেন্টের উপরে থাকে */
+    transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+#bmacFloatingBtn:hover {
+    background-color: #e87233; /* হোভার ইফেক্টের জন্য একটু গাঢ় রঙ */
+    transform: scale(1.05); /* সামান্য বড় করা হলো */
+}
+
+
+/* -------------------------------------- */
+/* NEW STYLES for Multi-Folder UI (Layout Fix) */
+/* -------------------------------------- */
+
+#folderListContainer {
+    margin-top: 10px;
+}
+
+.selected-folder-item {
+    /* 🚀 ফিক্স: ইনপুট বক্সকে নিচে আনার জন্য ডিসপ্লে ব্লক করা হলো */
+    display: block;
+    padding: 8px;
+    border: 1px solid #1f2b4a;
+    border-radius: 6px;
+    margin-bottom: 12px;
+}
+
+/* 🚀 ফিক্স: ফোল্ডার নাম এবং বাটনকে একই লাইনে রাখার জন্য */
+.folder-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.folder-path-display {
+    font-size: 14px;
+    font-weight: 500;
+    flex-grow: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-count-display {
+    font-size: 13px;
+    color: var(--accent);
+    background: #1f6f5e20;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+.remove-folder-btn {
+    background: #a94b4b;
+    border: 1px solid #853a3a;
+    padding: 4px 8px;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.remove-folder-btn:hover {
+    transform: none;
+    background: #c05858;
+}
+
+/* 🚀 ফিক্স: Absolute Path ইনপুট বক্সকে পুরো উইডথে রাখার জন্য */
+.folder-basepath-input-group {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.folder-basepath-input-group label {
+    white-space: nowrap;
+    font-size: 14px;
+    color: var(--muted);
+    padding-right: 5px;
+    flex-shrink: 0;
+}
+
+.folder-basepath-input-group input {
+    /* ইনপুট বক্সটিকে বাকি জায়গা দখল করতে দিন */
+    flex-grow: 1;
+    width: 100%;
+    padding: 6px 8px;
+    box-sizing: border-box;
+}
+
+.folder-select-row,
+.search-row {
+    margin-top: 10px;
+}
+
+/* -------------------------------------- */
+/* 🌟 MOBILE RESPONSIVENESS (Media Queries) 🌟 */
+/* -------------------------------------- */
+
+@media (max-width: 600px) {
+    body {
+        padding: 10px; /* স্ক্রিনের কিনারা থেকে কম প্যাডিং */
+    }
+
+    /* 1. Controls and Search Row Adjustments */
+    .controls .row {
+        /* সিলেক্ট ফোল্ডার এবং সার্চ বাটনগুলো ছোট স্ক্রিনে উল্লম্বভাবে সাজানো */
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .row button,
+    .search-row input,
+    .search-row button {
+        width: 100%; /* বাটন/ইনপুট পূর্ণ প্রস্থে দেখাবে */
+        margin-bottom: 5px;
+    }
+    
+    .search-row {
+        /* সার্চ ইনপুট এবং বাটনকে উল্লম্বভাবে সাজানোর জন্য ফ্লেক্স লেআউট পরিবর্তন */
+        flex-direction: column;
+    }
+
+    /* 2. Handling the Results Table (Crucial for Mobile) */
+    .results table,
+    .results thead,
+    .results tbody,
+    .results th,
+    .results td,
+    .results tr {
+        display: block; /* টেবিলকে স্ট্যাকড কার্ড লেআউটে পরিবর্তন করা হলো */
+    }
+
+    .results thead tr {
+        position: absolute;
+        top: -9999px; /* হেডার লুকানো হলো */
+        left: -9999px;
+    }
+
+    .results tr {
+        border: 1px solid #223055;
+        margin-bottom: 10px;
+        display: block;
+        border-radius: 8px;
+    }
+
+    .results td {
+        border: none;
+        border-bottom: 1px dotted #223055;
+        position: relative;
+        padding-left: 50%; /* লেবেলের জন্য জায়গা রাখা হলো */
+        text-align: left;
+    }
+    
+    /* ডেটা লেবেল যোগ করার জন্য CSS (data-label অ্যাট্রিবিউট app.js থেকে আসবে) */
+    .results td:before {
+        content: attr(data-label);
+        position: absolute;
+        left: 6px;
+        width: 45%;
+        padding-right: 10px;
+        white-space: nowrap;
+        font-weight: bold;
+        color: var(--accent);
+    }
+    
+    /* 3. Open Button Column Fix */
+    /* Open Actions কে সম্পূর্ণ প্রস্থে এনে বাটনগুলো সেন্টারে রাখা হলো */
+    .results td:nth-last-child(1) { 
+        text-align: center;
+        padding-left: 6px;
+        border-bottom: none;
+    }
+
+    /* Open Folder/File বাটনগুলোকে ছোট স্ক্রিনে পূর্ণ প্রস্থ দেওয়া হলো */
+    .results td:nth-last-child(1) button {
+        width: 48%; /* বাটন দুটির জন্য পাশাপাশি জায়গা তৈরি */
+        display: inline-block;
+    }
+
+    /* 4. Floating Button Adjustments */
+    #bmacFloatingBtn {
+        right: 10px;
+        bottom: 10px;
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+}
