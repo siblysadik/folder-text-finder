@@ -1,6 +1,20 @@
-// static/app.js (FINAL CODE with Data-Label Fix for Responsive Table)
+// static/app.js (FINAL CODE with Service Worker Registration)
 
-// ... (Existing code remains the same until displayResults function) ...
+// 🌟 PWA: Service Worker Registration যুক্ত করা হলো 🌟
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        // service worker ফাইলটি static/sw.js এ আছে
+        navigator.serviceWorker.register('/static/sw.js')
+            .then(registration => {
+                console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            })
+            .catch(error => {
+                console.log('ServiceWorker registration failed: ', error);
+            });
+    });
+}
+// 🌟 PWA কোড শেষ 🌟
+
 
 document.addEventListener('DOMContentLoaded', () => {
     const $ = s => document.querySelector(s);
@@ -444,7 +458,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const pathTd = document.createElement('td');
             pathTd.textContent = match.path;
-            pathTd.setAttribute('data-label', 'File Path'); // 👈 RWD Fix
+            pathTd.setAttribute('data-label', 'File Path'); 
             tr.appendChild(pathTd);
 
             const pageLineTd = document.createElement('td');
@@ -453,19 +467,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 content = `Line: ${match.line}`;
             }
             pageLineTd.innerHTML = content;
-            pageLineTd.setAttribute('data-label', 'Page/Line'); // 👈 RWD Fix
+            pageLineTd.setAttribute('data-label', 'Page/Line'); 
             tr.appendChild(pageLineTd);
 
             const previewTd = document.createElement('td');
             previewTd.innerHTML = match.preview;
-            previewTd.setAttribute('data-label', 'Preview (highlighted)'); // 👈 RWD Fix
+            previewTd.setAttribute('data-label', 'Preview (highlighted)'); 
             tr.appendChild(previewTd);
 
             const openTd = document.createElement('td');
             // 🚀 ফিক্স: বাটন দুটি পাশাপাশি দেখানোর জন্য Flexbox ব্যবহার করা হলো
             openTd.style.display = 'flex'; 
             openTd.style.gap = '10px'; // বাটন দুটির মাঝে সামান্য ফাঁকা স্থান
-            openTd.setAttribute('data-label', 'Open Actions'); // 👈 RWD Fix
+            openTd.setAttribute('data-label', 'Open Actions'); 
 
             // 1. Open File Button (Updated logic for all text-based files)
             const openFileBtn = document.createElement('button');
@@ -509,7 +523,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // 2. Open Folder Button (Updated logic)
             const openFolderBtn = document.createElement('button');
             openFolderBtn.textContent = 'Open Folder';
-            // ❌ আগের marginLeft স্টাইল মুছে ফেলা হলো
             // openFolderBtn.style.marginLeft = '10px'; 
 
             openFolderBtn.onclick = async () => {
