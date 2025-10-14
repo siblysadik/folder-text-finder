@@ -8,6 +8,8 @@ logger = logging.getLogger("pdf_reader")
 
 def get_pdf_content(file_obj):
     full_text = ""
+    # গুরুত্বপূর্ণ: .read() ডাকার আগে file_obj কে শুরু থেকে নিয়ে যেতে হবে
+    file_obj.seek(0)
     try:
         doc = fitz.open(stream=io.BytesIO(file_obj.read()), filetype="pdf")
         for page in doc:
@@ -15,13 +17,20 @@ def get_pdf_content(file_obj):
         doc.close()
     except Exception as e:
         logger.error(f"Error reading PDF content: {e}")
+    
+    # ফাংশন শেষে file_obj কে আবার শুরু থেকে নিয়ে যাওয়া নিরাপদ
+    file_obj.seek(0)
     return full_text
     
 def search_pdf_content(file_obj, file_path, query):
+    # .read() ডাকার আগে file_obj কে শুরু থেকে নিয়ে যেতে হবে
+    file_obj.seek(0)
+    
     try:
         query_parts = query.strip().split()
         escaped_query_parts = [re.escape(part) for part in query_parts]
-        regex_pattern_str = r'\s+'.join(escaped_query_parts)
+        # একাধিক শব্দ থাকলেও সেগুলোর মাঝে এক বা একাধিক whitespace থাকবে
+        regex_pattern_str = r'\s+'.join(escaped_query_parts) 
         matcher = re.compile(regex_pattern_str, re.IGNORECASE)
 
     except re.error as e:
@@ -31,6 +40,7 @@ def search_pdf_content(file_obj, file_path, query):
     results = []
     
     try:
+        # doc তৈরি করার জন্য file_obj থেকে data পড়া হচ্ছে
         doc = fitz.open(stream=io.BytesIO(file_obj.read()), filetype="pdf")
 
         for pno in range(len(doc)):
@@ -56,11 +66,12 @@ def search_pdf_content(file_obj, file_path, query):
                         "file": os.path.basename(file_path),
                         "path": file_path,
                         "page": pno + 1,
-                        "line": block_num,
+                        "line": None, # <--- ব্লক নম্বর দেখানো বন্ধ করতে এটিকে None করা হলো
                         "preview": highlighted_preview
                     })
                     found_in_blocks = True
             
+            # ব্লক ম্যাথড কাজ না করলে বা কোনো কারণে পুরো পেইজ টেক্সট সার্চ করার জন্য
             if not found_in_blocks:
                 full_page_text = page.get_text("text") or ""
                 for m in matcher.finditer(full_page_text):
@@ -78,7 +89,7 @@ def search_pdf_content(file_obj, file_path, query):
                         "file": os.path.basename(file_path),
                         "path": file_path,
                         "page": pno + 1,
-                        "line": None,
+                        "line": None, # <--- লাইন নম্বর দেখানো বন্ধ করতে এটিকে None করা হলো
                         "preview": highlighted_preview
                     })
 
@@ -87,5 +98,7 @@ def search_pdf_content(file_obj, file_path, query):
         logger.warning(f"Could not open/process {os.path.basename(file_path)}: {e}")
     except Exception as e:
         logger.exception(f"An error occurred while processing {os.path.basename(file_path)}: {e}")
-        
+    
+    # ফাংশন শেষে file_obj কে আবার শুরু থেকে নিয়ে যাওয়া নিরাপদ
+    file_obj.seek(0)
     return {"status": "ok", "matches": results, "count": len(results)}, 200
