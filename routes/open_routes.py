@@ -1,4 +1,4 @@
-# routes/open_routes.py (চূড়ান্ত আপডেট - U+00A0 এরর ফিক্স সহ)
+# routes/open_routes.py (চূড়ান্ত আপডেট)
 
 from flask import Blueprint, request, jsonify, send_file
 import logging
