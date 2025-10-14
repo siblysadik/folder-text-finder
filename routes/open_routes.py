@@ -1,16 +1,15 @@
-# routes/open_routes.py (চূড়ান্ত আপডেট)
+# routes/open_routes.py (চূড়ান্ত আপডেট - U+00A0 এরর ফিক্স সহ)
 
 from flask import Blueprint, request, jsonify, send_file
 import logging
-import secrets 
-import io 
+import secrets 
+import io 
 import os
 
 # 🚀 globals থেকে কেন্দ্রীয় FILE_STORAGE_DICT এবং Lock ইম্পোর্ট করা হলো
-# পূর্বের TEMP_FILE_STORAGE ইম্পোর্ট এররটি এখানে ঠিক করা হলো।
 from globals import FILE_STORAGE_DICT, FILE_STORAGE_LOCK
 # 🚀 file_reader থেকে নতুন ফাংশন Import করা হলো
-from services.file_reader import get_original_folder_path, open_folder_in_os 
+from services.file_reader import get_original_folder_path, open_folder_in_os 
 
 open_bp = Blueprint("open", __name__)
 logger = logging.getLogger("open_routes")
@@ -23,8 +22,8 @@ def open_browser():
     
     with FILE_STORAGE_LOCK:
         # ⚠️ এখন কেন্দ্রীয় FILE_STORAGE_DICT ব্যবহার করা হলো
-        file_info = FILE_STORAGE_DICT.get(file_id) 
-    
+        file_info = FILE_STORAGE_DICT.get(file_id) 
+    
     if not file_info:
         return jsonify({"status": "error", "message": "File not found or has expired."}), 404
 
@@ -54,13 +53,13 @@ def store_file_temp():
         
         with FILE_STORAGE_LOCK:
             # ⚠️ এখন কেন্দ্রীয় FILE_STORAGE_DICT ব্যবহার করা হলো
-            FILE_STORAGE_DICT[file_id] = { 
+            FILE_STORAGE_DICT[file_id] = { 
                 'data': file_content_bytes,
                 'filename': uploaded_file.filename
                 # 'original_path' এখানে প্রয়োজন নেই (যদিও view_routes এ যোগ করা হয়েছে)
             }
         
-        uploaded_file.seek(0) 
+        uploaded_file.seek(0) 
         
         return jsonify({"status": "ok", "file_id": file_id})
     except Exception as e:

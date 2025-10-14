@@ -22,11 +22,11 @@ TEMP_ROOT_DIR = Path(tempfile.gettempdir())
 TEMP_DIR_PATH = TEMP_ROOT_DIR / "temp_finder_uploads"
 
 # ফাইলটি আপলোড করার পর কতক্ষণ রাখা হবে (ঘণ্টা)
-FILE_CLEANUP_HOURS = 1 
+FILE_CLEANUP_HOURS = 1 
 
 # নিশ্চিত করা হলো যে অন-ডিস্ক ডিরেক্টরি তৈরি আছে
 try:
-    TEMP_DIR_PATH.mkdir(parents=True, exist_ok=True)
+    TEMP_DIR_PATH.mkdir(parents=True, exist_ok=True)
 except Exception as e:
-    # লগিং বা এরর হ্যান্ডলিং যোগ করা যেতে পারে
-    print(f"Error ensuring TEMP_DIR_PATH exists: {e}")
+    # লগিং বা এরর হ্যান্ডলিং যোগ করা যেতে পারে
+    print(f"Error ensuring TEMP_DIR_PATH exists: {e}")
