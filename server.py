@@ -15,8 +15,8 @@ from globals import TEMP_DIR_PATH, FILE_CLEANUP_HOURS, FILE_STORAGE_DICT, FILE_S
 
 # অতিরিক্ত মেমরি ব্যবহারের জন্য: formparser-এর ফাইল বাফারের সীমা বৃদ্ধি 
 # 512 MB পর্যন্ত ছোট ফাইলগুলি মেমরিতে বাফার হবে
-formparser.DEFAULT_MAX_SIZE = 512 * 1024 * 1024
-formparser.PART_MAX_SIZE = 512 * 1024 * 1024
+formparser.DEFAULT_MAX_SIZE = 256 * 1024 * 1024
+formparser.PART_MAX_SIZE = 256 * 1024 * 1024
 
 # ফর্ম ডেটার মেটাডেটা (যেমন ফাইলের নাম ও পাথ) বাফার আকার বৃদ্ধি।
 Request.max_form_parts = 0 

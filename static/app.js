@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let folderBasePaths = new Map(); // folder_name (root_dir) -> absolute_path
 
     // Constants
-    const MAX_FILE_SIZE = 512 * 1024 * 1024; // 512 MB ফাইল সাইজ লিমিট
+    const MAX_FILE_SIZE = 64 * 1024 * 1024; // 64 MB ফাইল সাইজ লিমিট
     const DRIVE_PATTERN = /^[A-Za-z]:[\\\/]?$/;
 
     const supportedExtensions = new Set([
