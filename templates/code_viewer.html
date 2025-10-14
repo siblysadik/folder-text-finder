@@ -93,7 +93,7 @@
     </div>
     
     <div id="code-container">
-        {% if preloaded_content %}
+        {% if preloaded_content is not none %}
             <pre><code id="file-content" class="hljs language-plaintext">{{ preloaded_content }}</code></pre>
         {% else %}
             <div id="loading-message">Loading file content...</div>
@@ -109,15 +109,17 @@
         const query = {{ query | tojson }}; 
         
         const codeContainer = document.getElementById('code-container');
-        const fileContentEl = document.getElementById('file-content'); // codeTag হিসেবে ব্যবহৃত হয়
+        let fileContentEl = document.getElementById('file-content'); // codeTag হিসেবে ব্যবহৃত হয়
         const saveFileBtn = document.getElementById('saveFileBtn');
         
         let initialContentLoaded = fileContentEl && fileContentEl.textContent.trim().length > 0;
         let decodedFilename = 'downloaded_file';
+        let isTextViewer = window.location.pathname.includes('/view_text/');
 
         // 🚀 কন্টেন্ট লোডিং লজিক: যদি preloaded_content না থাকে, তবে API কল করে লোড করুন
         if (!initialContentLoaded) {
-            codeContainer.innerHTML = '<div style="padding: 20px;">Loading file content...</div>';
+             const loadingMessage = document.getElementById('loading-message');
+             if (loadingMessage) loadingMessage.textContent = 'Loading file content... (This may take a moment for large files)';
 
             const response = await fetch(`/get_file/${fileId}`);
             
@@ -143,28 +145,28 @@
                 preElement.id = 'code-block';
                 const codeTag = document.createElement('code');
                 codeTag.id = 'file-content';
-                codeTag.className = 'hljs language-plaintext'; 
+                
+                // যদি view_text হয় তবে plaintext, অন্যথায় hljs default ব্যবহার করা হলো
+                codeTag.className = isTextViewer ? 'hljs language-plaintext' : 'hljs'; 
+                
                 codeTag.textContent = standardizedText; 
                 preElement.appendChild(codeTag);
 
                 codeContainer.appendChild(preElement);
-                
-                // যদি এটি Word/PDF না হয়, তাহলে সিনট্যাক্স হাইলাইটিং করার চেষ্টা করুন (অন্যান্য ভিউয়ারের জন্য)
-                // যদি আপনি শুধুমাত্র সাধারণ টেক্সট এবং Word ফাইল দেখানোর জন্য এই টেমপ্লেটটি ব্যবহার করেন, তাহলে এটি লাগবে না
-                // যদি /view_code/ রুটটিও এই টেমপ্লেটটি ব্যবহার করে তবে এই অংশটি প্রয়োজন
-                if (!window.location.pathname.includes('/view_text/')) {
-                     hljs.highlightElement(codeTag); 
-                }
+                fileContentEl = codeTag;
                 
                 initialContentLoaded = true;
+            } else {
+                 codeContainer.innerHTML = `<div style="padding: 20px; color: red;">Failed to load file content: ${response.statusText}. Please check the server logs.</div>`;
+                 return;
             }
         }
         
         if (initialContentLoaded) {
-             const contentElement = document.getElementById('file-content');
+             const contentElement = fileContentEl;
              
              // 🚀 ধাপ ১: যদি /view_text/ রুটে থাকে, তবে সিনট্যাক্স হাইলাইটিং এড়িয়ে যান (শুধুমাত্র প্লেইন টেক্সট মোড)
-             if (!window.location.pathname.includes('/view_text/')) {
+             if (!isTextViewer) {
                  hljs.highlightElement(contentElement);
              }
 
@@ -185,7 +187,8 @@
 
                 let node;
                 while (node = walker.nextNode()) {
-                    if (node.parentElement && node.parentElement.classList.contains('highlight')) {
+                    // কোড ব্লক বা কমেন্ট এ হাইলাইট এড়িয়ে যাওয়া
+                    if (node.parentElement && (node.parentElement.classList.contains('highlight') || node.parentElement.closest('.hljs-comment'))) {
                         continue; 
                     }
                     

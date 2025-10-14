@@ -43,6 +43,8 @@ def get_file_text_content(file_id, file_storage):
     file_filename = file_info['filename']
     file_extension = os.path.splitext(file_filename)[1].lower()
     
+    # ⚠️ Note: For .doc files, this path is needed by the underlying library (antiword)
+    # Ensure this path is defined in globals.py or passed correctly if used in the reader function.
     temp_uploads_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'temp_uploads')
 
     file_obj = io.BytesIO(file_content_bytes)
@@ -73,30 +75,39 @@ def get_file_text_content(file_id, file_storage):
 def get_original_folder_path(file_id, file_storage):
     file_info = file_storage.get(file_id)
     if file_info and 'original_path' in file_info:
+        # ⚠️ Note: The original_path saved in the dict is the absolute path to the file.
+        # We return the directory of that path.
         return os.path.dirname(file_info['original_path'])
     return None
 
-def open_folder_in_os(folder_path):
+def open_folder_in_os(file_or_folder_path):
+    # ⚠️ Note: This function now accepts either a file or folder path and opens the containing folder.
     try:
-        if os.path.isfile(folder_path):
-            folder_path = os.path.dirname(folder_path)
-
-        if not folder_path or folder_path.strip() == os.path.curdir:
-             logger.error(f"Cannot open folder: Path is ambiguous or empty: {folder_path}")
-             return False
-             
+        # যদি ফাইল হয়, তবে তার ডিরেক্টরি বের করা হলো
+        if os.path.isfile(file_or_folder_path):
+            folder_path = os.path.dirname(file_or_folder_path)
+        else:
+            folder_path = file_or_folder_path
+        
+        # Windows Path Fix
         if os.name == 'nt':
             folder_path_win = folder_path.replace('/', '\\')
+            if not os.path.isdir(folder_path_win):
+                 logger.error(f"Cannot open folder: Path is not a valid directory: {folder_path_win}")
+                 return False
+
             subprocess.Popen(['explorer', folder_path_win]) 
             
         elif os.uname().sysname == 'Darwin': # macOS
+            if not os.path.isdir(folder_path): return False
             subprocess.Popen(['open', folder_path])
         else: # Linux (and others)
+            if not os.path.isdir(folder_path): return False
             subprocess.Popen(['xdg-open', folder_path])
             
         return True
     except Exception as e:
-        logger.error(f"Failed to open folder '{folder_path}' in OS: {e}")
+        logger.error(f"Failed to open folder '{file_or_folder_path}' in OS: {e}")
         return False
 # ------------------------------------------------------------------
 

@@ -1,110 +1,203 @@
-# routes/view_routes.py (পরিবর্তিত কোড)
+# routes/view_routes.py
 
-from flask import Blueprint, request, jsonify, Response, render_template
+from flask import Blueprint, request, jsonify, render_template, send_file, Response, redirect, url_for
+from globals import FILE_STORAGE_DICT, FILE_STORAGE_LOCK
+# 💡 file_reader থেকে দুটি ফাংশন ইম্পোর্ট করা হলো
+from services.file_reader import get_file_text_content, open_folder_in_os
+from pathlib import Path
 import logging
-import io
-import os
-import secrets
-import re
-from urllib.parse import quote
-# 🚀 globals থেকে কেন্দ্রীয় TEMP_FILE_STORAGE ইম্পোর্ট করা হলো
-from globals import TEMP_FILE_STORAGE
-# 🚀 services/file_reader.py থেকে নতুন ফাংশন ইম্পোর্ট করা হলো
-from services.file_reader import get_file_text_content 
+import uuid
+import threading
+import mimetypes
 
 view_bp = Blueprint('view', __name__)
 logger = logging.getLogger("view_routes")
 
-def get_mime_type(filename):
-    extension = os.path.splitext(filename)[1].lower()
-    if extension == '.pdf':
-        return 'application/pdf'
-    elif extension == '.docx':
-        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    elif extension == '.doc':
-        return 'application/msword'
-    else:
-        return 'application/octet-stream'
+# ----------------- UPLOAD/STORAGE ROUTE -----------------
 
 @view_bp.route("/upload_for_view", methods=["POST"])
 def upload_for_view():
-    uploaded_file = request.files.get("file")
-    # 🚀 ফ্রন্টএন্ড থেকে পাঠানো 'original_path' অ্যাক্সেস করা হলো
-    original_path = request.form.get('original_path') 
+    """
+    Receives an uploaded file and its original path, stores it in memory, 
+    and returns a unique file_id.
+    """
+    try:
+        if 'file' not in request.files:
+            # 500 error এর পরিবর্তে 400 JSON response নিশ্চিত করা হলো
+            return jsonify({"status": "error", "message": "No file part in the request."}), 400
+        
+        uploaded_file = request.files['file']
+        # 'original_path' এখন absolute path হিসেবে আসবে
+        original_path = request.form.get('original_path')
+
+        if not uploaded_file.filename:
+            return jsonify({"status": "error", "message": "No selected file."}), 400
+        
+        file_id = str(uuid.uuid4())
+        file_content_bytes = uploaded_file.read()
+        
+        # 🌟 থ্রেড-সেফ সেভিং
+        with FILE_STORAGE_LOCK:
+            FILE_STORAGE_DICT[file_id] = {
+                'data': file_content_bytes,
+                'filename': uploaded_file.filename,
+                'original_path': original_path, # অ্যাবসোলিউট পাথ সেভ করা হলো
+                'timestamp': threading.local(), 
+                'size': len(file_content_bytes)
+            }
+        
+        logger.info(f"File uploaded and stored: ID={file_id}, Name={uploaded_file.filename}, Size={len(file_content_bytes)} bytes")
+        
+        return jsonify({"status": "ok", "file_id": file_id}), 200
+
+    except Exception as e:
+        logger.exception("Error during file upload for viewing.")
+        # 500 internal server error এর জন্যও JSON response নিশ্চিত করা হলো
+        return jsonify({"status": "error", "message": f"An internal server error occurred: {e}"}), 500
+
+# ----------------- VIEWER ROUTES -----------------
+
+@view_bp.route("/view_code/<file_id>")
+def view_code(file_id):
+    """
+    Viewer for code/generic text files. Preloads content in HTML.
+    """
+    query = request.args.get('q', '').strip()
     
-    if not uploaded_file:
-        return jsonify({"status": "error", "message": "No file uploaded."}), 400
+    with FILE_STORAGE_LOCK:
+        file_info = FILE_STORAGE_DICT.get(file_id)
+
+    if not file_info:
+        return "File not found or session expired.", 404
 
     try:
-        file_content_bytes = uploaded_file.read()
-        file_id = secrets.token_hex(16)
+        # বাইনারি ডেটা সরাসরি কন্টেন্টে ডিকোড করা হলো (ছোট ফাইলের জন্য)
+        file_content_bytes = file_info['data']
+        preloaded_content = file_content_bytes.decode('utf-8', errors='replace')
         
-        # 🚀 কেন্দ্রীয় স্টোরেজে 'original_path' সংরক্ষণ করা হলো
-        TEMP_FILE_STORAGE[file_id] = {
-            'data': file_content_bytes,
-            'filename': uploaded_file.filename,
-            'original_path': original_path 
-        }
-        
-        return jsonify({"status": "ok", "file_id": file_id})
+        return render_template(
+            "code_viewer.html",
+            file_id=file_id,
+            filename=file_info['filename'],
+            query=query,
+            preloaded_content=preloaded_content
+        )
     except Exception as e:
-        logger.exception("Failed to upload file for viewing.")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logger.error(f"Error reading file content for view_code/{file_id}: {e}")
+        return f"Error reading file content: {e}", 500
 
-@view_bp.route("/get_file/<file_id>", methods=["GET"])
-def get_file(file_id):
-    file_info = TEMP_FILE_STORAGE.get(file_id)
+
+@view_bp.route("/view_text/<file_id>")
+def view_text(file_id):
+    """
+    Special viewer for large text files (DOCX/XLSX/CSV). Loads content via JS.
+    """
+    query = request.args.get('q', '').strip()
+    
+    with FILE_STORAGE_LOCK:
+        file_info = FILE_STORAGE_DICT.get(file_id)
+
     if not file_info:
-        return jsonify({"status": "error", "message": "File not found or has expired."}), 404
+        return "File not found or session expired.", 404
+
+    # কন্টেন্ট লোড না করার জন্য None পাঠানো হলো। JS পরে /get_file/ কল করবে।
+    return render_template(
+        "code_viewer.html", 
+        file_id=file_id,
+        filename=file_info['filename'],
+        query=query,
+        preloaded_content=None 
+    )
+
+
+# ----------------- FILE RETRIEVAL ROUTE -----------------
+
+@view_bp.route("/get_file/<file_id>")
+def get_file(file_id):
+    """
+    Serves the file content (for direct PDF viewing or JS-based content loading).
+    For DOCX/XLSX/CSV/DOC, it returns the plain text content generated by file_reader.
+    """
+    with FILE_STORAGE_LOCK:
+        file_info = FILE_STORAGE_DICT.get(file_id)
+
+    if not file_info:
+        return "File not found or session expired.", 404
+
+    filename = file_info['filename']
+    file_extension = Path(filename).suffix.lower()
+
+    # 🌟 Excel/CSV/DOCX/DOC এর জন্য প্লেইন টেক্সট কন্টেন্ট জেনারেট করা হলো
+    TEXT_GENERATION_EXTENSIONS = {'.docx', '.doc', '.xlsx', '.xls', '.csv'}
+    
+    if file_extension in TEXT_GENERATION_EXTENSIONS:
+        try:
+            # services/file_reader.py থেকে টেক্সট কন্টেন্ট জেনারেট করা হলো
+            full_text = get_file_text_content(file_id, FILE_STORAGE_DICT)
+            
+            if full_text is None:
+                return "Failed to extract text content.", 500
+            
+            # Text/Plain MIME type সেট করা হলো
+            response = Response(full_text, mimetype='text/plain; charset=utf-8')
+            
+            # ফ্রন্টএন্ডে ফাইলের নাম পাঠানোর জন্য Content-Disposition হেডার যোগ করা হলো
+            # এটি JS-কে আসল ফাইলনেম দিতে সাহায্য করবে।
+            encoded_filename = filename.encode('utf-8').decode('latin-1', 'ignore')
+            response.headers['Content-Disposition'] = f'attachment; filename="{encoded_filename}"; filename*=UTF-8''{filename}'
+
+            return response
+            
+        except Exception as e:
+            logger.error(f"Error processing text for /get_file/{file_id}: {e}")
+            return f"Error processing file content: {e}", 500
+
+    # 🌟 অন্যান্য ফাইল (যেমন PDF, Code/TXT) এর জন্য বাইনারি ফাইল ডেটা রিটার্ন করা হলো
+    
+    mime_type, _ = mimetypes.guess_type(filename)
+    if not mime_type:
+        mime_type = 'application/octet-stream'
 
     file_content_bytes = file_info['data']
-    file_filename = file_info['filename']
-    mime_type = get_mime_type(file_filename)
     
-    resp = Response(file_content_bytes, mimetype=mime_type)
-    
-    # Set Content-Disposition to 'attachment' for ALL non-PDF files to ensure download
-    # 🛑 .docx, .doc, ও অন্যান্য ফাইলগুলি এখন /get_file/ এ ডিফল্টভাবে ডাউনলোড হবে
-    if mime_type != 'application/pdf':
-        resp.headers.add("Content-Disposition", f'attachment; filename*=UTF-8\'\'{quote(os.path.basename(file_filename))}')
-    
-    return resp
+    return Response(
+        file_content_bytes,
+        mimetype=mime_type,
+        headers={
+            "Content-Disposition": f"attachment; filename=\"{filename}\"; filename*=UTF-8''{filename}"
+        }
+    )
 
-@view_bp.route("/view_code/<file_id>", methods=["GET"])
-def view_code(file_id):
-    file_info = TEMP_FILE_STORAGE.get(file_id)
-    if not file_info:
-        return "File not found.", 404
-    
-    query = request.args.get('q', '')
-    return render_template("code_viewer.html", file_id=file_id, query=query)
+# ----------------- FOLDER OPEN ROUTE -----------------
 
-# 🚀 নতুন রুট: Word ফাইল থেকে টেক্সট বের করে দেখানোর জন্য
-@view_bp.route("/view_text/<file_id>", methods=["GET"])
-def view_text(file_id):
-    file_info = TEMP_FILE_STORAGE.get(file_id)
+@view_bp.route("/open_folder/<file_id>", methods=["POST"])
+def open_folder(file_id):
+    """
+    Opens the original folder location of the file using the saved absolute path.
+    """
+    with FILE_STORAGE_LOCK:
+        file_info = FILE_STORAGE_DICT.get(file_id)
+
     if not file_info:
-        return "File not found or has expired.", 404
+        # File ID না পাওয়া গেলে JSON response নিশ্চিত করা হলো
+        return jsonify({"status": "error", "message": "File ID not found or session expired."}), 404
+
+    original_path = file_info.get('original_path')
     
-    query = request.args.get('q', '')
-    
+    if not original_path:
+        return jsonify({"status": "error", "message": "Original path not recorded for this file."}), 400
+
     try:
-        # file_reader সার্ভিস ব্যবহার করে ফাইল থেকে টেক্সট বের করা হলো
-        # get_file_text_content ফাংশনটি এখন নিচে services/file_reader.py তে যোগ করা হবে
-        file_text = get_file_text_content(file_id, TEMP_FILE_STORAGE)
+        # services/file_reader.py এর ফাংশন ব্যবহার করে ফোল্ডার ওপেন করা হলো
+        success = open_folder_in_os(original_path)
         
-        if file_text is None:
-             return "Error: Could not extract text content from the file.", 500
-        
-        # টেক্সটটি HTML এ পাঠানোর জন্য উপযুক্ত করে এনকোড করা হলো
-        return render_template(
-            "code_viewer.html", 
-            file_id=file_id, 
-            query=query, 
-            preloaded_content=file_text, 
-            filename=file_info['filename']
-        )
-        
+        if success:
+            logger.info(f"Successfully sent command to open folder for path: {original_path}")
+            return jsonify({"status": "ok", "message": "Folder open command executed successfully."}), 200
+        else:
+            logger.error(f"Failed to execute folder open command for path: {original_path}")
+            return jsonify({"status": "error", "message": "Failed to open folder on the server. Check server logs."}), 500
+
     except Exception as e:
-        logger.exception(f"Error reading file {file_info.get('filename')} for text view.")
-        return f"Error: Failed to process file for text view: {e}", 500
+        logger.exception("Error executing open folder command.")
+        return jsonify({"status": "error", "message": f"An internal error occurred while opening the folder: {e}"}), 500

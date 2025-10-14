@@ -10,9 +10,9 @@ const urlsToCache = [
     '/static/app.js',
     '/static/manifest.json',
     // আপনার আইকনগুলিও ক্যাশ করা হলো (index.html এ ব্যবহৃত পাথ অনুযায়ী)
-    '../icons/icon.png', 
-    '../icons/icon-192.png',
-    '../icons/icon-512.png'
+    '/static/icons/icon.png', 
+    '/static/icons/icon-192.png',
+    '/static/icons/icon-512.png'
 ];
 
 // ইনস্টলেশন ইভেন্ট: ক্যাশে ফাইল যোগ করা
