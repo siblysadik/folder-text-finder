@@ -1,11 +1,13 @@
-# routes/open_routes.py (আপডেট করা)
+# routes/open_routes.py (চূড়ান্ত আপডেট)
 
 from flask import Blueprint, request, jsonify, send_file
 import logging
 import secrets 
 import io 
 import os
+
 # 🚀 globals থেকে কেন্দ্রীয় FILE_STORAGE_DICT এবং Lock ইম্পোর্ট করা হলো
+# পূর্বের TEMP_FILE_STORAGE ইম্পোর্ট এররটি এখানে ঠিক করা হলো।
 from globals import FILE_STORAGE_DICT, FILE_STORAGE_LOCK
 # 🚀 file_reader থেকে নতুন ফাংশন Import করা হলো
 from services.file_reader import get_original_folder_path, open_folder_in_os 
@@ -71,7 +73,6 @@ def open_folder(file_id):
     
     with FILE_STORAGE_LOCK:
         # FILE_STORAGE_DICT থেকে আসল ফোল্ডার পাথ বের করা
-        # get_original_folder_path ফাংশনটি globals.py থেকে dict-টি আর্গুমেন্ট হিসেবে নেয়।
         folder_path = get_original_folder_path(file_id, FILE_STORAGE_DICT)
     
     if not folder_path:
